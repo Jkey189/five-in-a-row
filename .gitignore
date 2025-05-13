@@ -1,0 +1,77 @@
+# C++ build artifacts
+*.o
+*.obj
+*.so
+*.dylib
+*.dll
+*.exe
+*.out
+*.app
+*.a
+
+# Build directories
+build/
+bin/
+lib/
+
+# CMake files
+CMakeFiles/
+CMakeCache.txt
+cmake_install.cmake
+Makefile
+
+# Python artifacts
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# PyQt generated files
+*.qrc.py
+*.ui.py
+
+# Editor/IDE specific files
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# Game-specific files
+*.gomoku  # Game save files
+
+# Logs and temporary files
+*.log
+*.tmp
+*.temp
+
+# Resource backups
+*_backup.*
+
+# Generated resources
+# Uncomment these if you want users to regenerate their resources instead of using version control
+# resources/gomoku_icon.png
+# Sound files (no longer used)
+resources/*.wav
+src/resources/*.wav
+
+# Keep these special files
+!build.sh
+!build.bat
