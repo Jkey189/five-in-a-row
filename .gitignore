@@ -75,3 +75,6 @@ src/resources/*.wav
 # Keep these special files
 !build.sh
 !build.bat
+
+# Ignore settings files
+settings.json
