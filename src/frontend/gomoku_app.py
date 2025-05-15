@@ -911,6 +911,13 @@ class GomokuWindow(QMainWindow):
         self.replay_toggle_btn.setCheckable(True)  # Make button toggleable
         replay_buttons_layout.addWidget(self.replay_toggle_btn)
         
+        # Flag indicator for replay mode
+        self.replay_flag = QLabel("OFF")
+        self.replay_flag.setStyleSheet("color: #FF5733; font-weight: bold; background-color: #34495E; padding: 5px; border-radius: 3px;")
+        self.replay_flag.setAlignment(Qt.AlignCenter)
+        self.replay_flag.setFixedWidth(40)
+        replay_buttons_layout.addWidget(self.replay_flag)
+        
         replay_layout.addLayout(replay_buttons_layout)
         
         # Navigation buttons
@@ -1194,9 +1201,14 @@ class GomokuWindow(QMainWindow):
         # Reset replay controls
         self.replay_toggle_btn.setEnabled(False)  # No moves to replay yet
         self.replay_toggle_btn.setChecked(False)
+        self.replay_flag.setText("OFF")
+        self.replay_flag.setStyleSheet("color: #FF5733; font-weight: bold; background-color: #34495E; padding: 5px; border-radius: 3px;")
         self.replay_prev_btn.setEnabled(False)
         self.replay_next_btn.setEnabled(False)
         self.move_counter_label.setText("Move: 0/0")
+        
+        # Set AI difficulty widgets enabled state based on game mode
+        self.difficulty_selector.setEnabled(self.board.game_mode != self.board.MODE_PLAYER_VS_PLAYER)
     
     def update_status(self, message):
         """Update the status message"""
@@ -1214,9 +1226,39 @@ class GomokuWindow(QMainWindow):
     
     def change_difficulty(self, index):
         """Change the AI difficulty level"""
-        difficulty_levels = [GomokuEngine.EASY, GomokuEngine.MEDIUM, GomokuEngine.HARD]
-        difficulty = difficulty_levels[index]
-        self.board.set_difficulty(difficulty)
+        # Check if a game is in progress
+        if self.board.game_in_progress and self.board.move_history:
+            reply = QMessageBox.question(self, 'Change Difficulty', 
+                'Changing difficulty will reset the current game. Continue?', 
+                QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
+            
+            if reply == QMessageBox.No:
+                # Revert to previous difficulty
+                self.difficulty_selector.blockSignals(True)
+                current_difficulty = self.board.engine.get_difficulty()
+                if current_difficulty == GomokuEngine.EASY:
+                    self.difficulty_selector.setCurrentIndex(0)
+                elif current_difficulty == GomokuEngine.MEDIUM:
+                    self.difficulty_selector.setCurrentIndex(1)
+                else:  # HARD
+                    self.difficulty_selector.setCurrentIndex(2)
+                self.difficulty_selector.blockSignals(False)
+                return
+            
+            # Reset the game with new difficulty
+            difficulty_levels = [GomokuEngine.EASY, GomokuEngine.MEDIUM, GomokuEngine.HARD]
+            difficulty = difficulty_levels[index]
+            self.board.set_difficulty(difficulty)
+            
+            # Reset the game and timer
+            self.game_time_seconds = 0
+            self.update_timer()
+            self.board.reset_game()
+        else:
+            # Just change the difficulty without resetting
+            difficulty_levels = [GomokuEngine.EASY, GomokuEngine.MEDIUM, GomokuEngine.HARD]
+            difficulty = difficulty_levels[index]
+            self.board.set_difficulty(difficulty)
         
         # Save settings
         self.save_settings()
@@ -1250,6 +1292,13 @@ class GomokuWindow(QMainWindow):
         # Set the new game mode
         self.board.set_game_mode(index)
         
+        # Reset game timer
+        self.game_time_seconds = 0
+        self.update_timer()
+        
+        # Enable/disable difficulty selector based on game mode
+        self.difficulty_selector.setEnabled(index != self.board.MODE_PLAYER_VS_PLAYER)
+        
         # Save settings
         self.save_settings()
     
@@ -1263,6 +1312,10 @@ class GomokuWindow(QMainWindow):
                 return
                 
             if self.board.enter_replay_mode():
+                # Update flag indicator
+                self.replay_flag.setText("ON")
+                self.replay_flag.setStyleSheet("color: #4CAF50; font-weight: bold; background-color: #34495E; padding: 5px; border-radius: 3px;")
+                
                 # Start from the last move instead of the beginning
                 self.board.reset_board_to_move(len(self.board.move_history) - 1)
                 
@@ -1293,6 +1346,10 @@ class GomokuWindow(QMainWindow):
             # Exiting replay mode
             self.board.exit_replay_mode()
             
+            # Update flag indicator
+            self.replay_flag.setText("OFF")
+            self.replay_flag.setStyleSheet("color: #FF5733; font-weight: bold; background-color: #34495E; padding: 5px; border-radius: 3px;")
+            
             # Disable navigation buttons
             self.replay_prev_btn.setEnabled(False)
             self.replay_next_btn.setEnabled(False)
@@ -1300,7 +1357,7 @@ class GomokuWindow(QMainWindow):
             # Re-enable other game controls
             self.reset_btn.setEnabled(True)
             self.undo_btn.setEnabled(self.board.engine.can_undo())
-            self.difficulty_selector.setEnabled(True)
+            self.difficulty_selector.setEnabled(self.board.game_mode != self.board.MODE_PLAYER_VS_PLAYER)
             self.mode_selector.setEnabled(True)
     
     def next_move(self):
